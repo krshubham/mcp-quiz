@@ -36,7 +36,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
     if (score >= 80) return `🚀 I scored ${score}% on the CanYouMCP quiz! Challenge accepted?`;
     if (score >= 70) return `✨ I got ${score}% on the CanYouMCP quiz! Can you beat me?`;
     if (score >= 60) return `⚡ I scored ${score}% on the CanYouMCP quiz! Your turn.`;
-    if (score >= 40) return `😅 I got ${score}% on the CanYouMCP quiz—ok your move!`;
+    if (score >= 40) return `😅 I got ${score}% on the CanYouMCP quiz! Ok your move!`;
     return `🤓 I only scored ${score}% on the CanYouMCP quiz. Flex your MCP skills!`;
   }, [score]);
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
