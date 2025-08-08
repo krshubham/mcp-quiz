@@ -38,10 +38,12 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
       const emoji = a?.isCorrect ? '🟩' : '🟥';
       byDiff[q.difficulty].push(emoji);
     }
+    // Use equal-width enclosed letter emojis so labels align in proportional fonts
+    // 🅴 = E, 🅼 = M, 🅷 = H
     const lines: string[] = [];
-    if (byDiff.easy.length) lines.push(`E: ${byDiff.easy.join('')}`);
-    if (byDiff.medium.length) lines.push(`M: ${byDiff.medium.join('')}`);
-    if (byDiff.hard.length) lines.push(`H: ${byDiff.hard.join('')}`);
+    if (byDiff.easy.length) lines.push(`🅴 ${byDiff.easy.join('')}`);
+    if (byDiff.medium.length) lines.push(`🅼 ${byDiff.medium.join('')}`);
+    if (byDiff.hard.length) lines.push(`🅷 ${byDiff.hard.join('')}`);
     const grid = lines.join('\n');
 
     const header =
@@ -88,7 +90,8 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
     if (within(candidate)) return `${header}\n\n${candidate}`;
 
     // 2) Remove a CTA-like line (last non-grid, non-header line)
-    const isGridLine = (l: string) => /^\s*[EMH]:/.test(l);
+    // Recognize grid lines that start with our enclosed letter labels
+    const isGridLine = (l: string) => /^\s*[🅴🅼🅷]\s/.test(l);
     const isHeader = (l: string) => l.includes('CanYouMCP') && l.includes('%');
     for (let i = candidateLines.length - 1; i >= 0; i--) {
       const l = candidateLines[i];
@@ -104,8 +107,8 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
     candidate = candidate.replace(/^🏆\s*/, '');
     if (within(candidate)) return `${header}\n\n${candidate}`;
 
-    // 4) Remove difficulty labels to compress grid
-    candidate = candidate.replace(/(^|\n)[EMH]:\s?/g, '$1');
+    // 4) Remove difficulty labels to compress grid (keep only the squares)
+    candidate = candidate.replace(/(^|\n)[🅴🅼🅷]\s?/g, '$1');
     if (within(candidate)) return `${header}\n\n${candidate}`;
 
     // 5) Collapse multiple newlines and trim
