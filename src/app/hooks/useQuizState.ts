@@ -4,6 +4,7 @@ import { QuizState, Question, Answer } from '@/app/types';
 const useQuizState = () => {
   const [state, setState] = useState<QuizState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,31 +41,39 @@ const useQuizState = () => {
 
   const submitAnswer = useCallback(
     async (questionId: number, selectedOption: number) => {
-      if (!state || state.quizCompleted) return;
+      if (!state || state.quizCompleted || submitting) return;
 
-      const res = await fetch('/api/quiz/check-answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId, selectedOption }),
-      });
+      setSubmitting(true);
+      try {
+        const res = await fetch('/api/quiz/check-answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questionId, selectedOption }),
+        });
 
-      const result = await res.json();
+        const result = await res.json();
 
-      const newAnswer: Answer = {
-        questionId,
-        selectedOption,
-        isCorrect: result.isCorrect,
-      };
+        const newAnswer: Answer = {
+          questionId,
+          selectedOption,
+          isCorrect: result.isCorrect,
+        };
 
-      const newState: QuizState = {
-        ...state,
-        answers: [...state.answers, newAnswer],
-      };
+        const newState: QuizState = {
+          ...state,
+          answers: [...state.answers, newAnswer],
+        };
 
-      updateState(newState);
-      return result;
+        updateState(newState);
+        return result;
+      } catch (error) {
+        console.error('Failed to submit answer:', error);
+        throw error;
+      } finally {
+        setSubmitting(false);
+      }
     },
-    [state]
+    [state, submitting]
   );
 
   const nextQuestion = useCallback(() => {
@@ -101,7 +110,7 @@ const useQuizState = () => {
     setLoading(false);
   }, []);
 
-  return { state, loading, error, submitAnswer, nextQuestion, resetQuiz };
+  return { state, loading, submitting, error, submitAnswer, nextQuestion, resetQuiz };
 };
 
 export default useQuizState;

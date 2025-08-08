@@ -9,19 +9,19 @@ import QuizResults from './QuizResults';
 import { AnimatePresence } from 'framer-motion';
 
 const Quiz = () => {
-  const { state, loading, error, submitAnswer, nextQuestion, resetQuiz } = useQuizState();
+  const { state, loading, submitting, error, submitAnswer, nextQuestion, resetQuiz } = useQuizState();
   const [quizStarted, setQuizStarted] = useState(false);
 
   if (loading) {
-    return <div className="text-white">Loading Quiz...</div>;
+    return <div className="text-stone-100">Loading Quiz...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+    return <div className="text-orange-400">Error: {error}</div>;
   }
 
   if (!state) {
-    return <div className="text-white">Could not initialize quiz state.</div>;
+    return <div className="text-stone-100">Could not initialize quiz state.</div>;
   }
 
   const handleStart = () => {
@@ -59,6 +59,7 @@ const Quiz = () => {
                 question={currentQuestion}
                 onSubmit={(selectedOption) => submitAnswer(currentQuestion.id, selectedOption)}
                 onNext={nextQuestion}
+                isSubmitting={submitting}
               />
             </div>
           )

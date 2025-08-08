@@ -9,9 +9,9 @@ const QuizProgress: React.FC<QuizProgressProps> = ({ current, total }) => {
   const progressPercentage = (current / total) * 100;
 
   return (
-        <div className="w-full max-w-2xl h-1 bg-gray-700 rounded-full">
+        <div className="w-full max-w-2xl h-1 bg-stone-700 rounded-full">
       <motion.div
-        className="h-1 bg-purple-600 rounded-full"
+        className="h-1 bg-emerald-500 rounded-full shadow-sm shadow-emerald-500/50"
         initial={{ width: '0%' }}
         animate={{ width: `${progressPercentage}%` }}
         transition={{ duration: 0.5, ease: 'easeInOut' }}

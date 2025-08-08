@@ -31,24 +31,97 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
   };
 
   const shareText = useMemo(() => {
-    if (score === 100) return `🥇 I ACED the CanYouMCP quiz with 100%! Think you can beat that? 💪`;
-    if (score >= 90) return `🔥 I scored ${score}% on the CanYouMCP quiz! Bet you can’t top it.`;
-    if (score >= 80) return `🚀 I scored ${score}% on the CanYouMCP quiz! Challenge accepted?`;
-    if (score >= 70) return `✨ I got ${score}% on the CanYouMCP quiz! Can you beat me?`;
-    if (score >= 60) return `⚡ I scored ${score}% on the CanYouMCP quiz! Your turn.`;
-    if (score >= 40) return `😅 I got ${score}% on the CanYouMCP quiz! Ok your move!`;
-    return `🤓 I only scored ${score}% on the CanYouMCP quiz. Flex your MCP skills!`;
-  }, [score]);
+    // Build a Wordle‑style grid grouped by difficulty
+    const byDiff: Record<'easy' | 'medium' | 'hard', string[]> = { easy: [], medium: [], hard: [] };
+    for (const q of questions) {
+      const a = answers.find((ans) => ans.questionId === q.id);
+      const emoji = a?.isCorrect ? '🟩' : '🟥';
+      byDiff[q.difficulty].push(emoji);
+    }
+    const lines: string[] = [];
+    if (byDiff.easy.length) lines.push(`E: ${byDiff.easy.join('')}`);
+    if (byDiff.medium.length) lines.push(`M: ${byDiff.medium.join('')}`);
+    if (byDiff.hard.length) lines.push(`H: ${byDiff.hard.join('')}`);
+    const grid = lines.join('\n');
+
+    const header =
+      score === 100
+        ? `🏆 CanYouMCP — ${correctAnswers}/${totalQuestions} • ${score}%`
+        : `CanYouMCP — ${correctAnswers}/${totalQuestions} • ${score}%`;
+
+    const cta =
+      score >= 90
+        ? 'Think you can beat this?'
+        : score >= 70
+        ? 'Can you top my score?'
+        : 'Your move.';
+
+    const hashtags = '#CanYouMCP #MCP #AIQuiz';
+
+    return `${header}\n\n${grid}\n\n${cta}\n${hashtags}`;
+  }, [answers, questions, correctAnswers, totalQuestions, score]);
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const fullText = useMemo(() => `${shareText}\n${shareUrl}`, [shareText, shareUrl]);
+  // Make URL prominent at the top for chat apps and copy
+  const fullText = useMemo(() => `🔗 Play: ${shareUrl}\n\n${shareText}`, [shareText, shareUrl]);
+  // Do the same for mobile native share
+  const mobileShareText = useMemo(() => `🔗 Play: ${shareUrl}\n\n${shareText}`, [shareText, shareUrl]);
 
   // Treat mobile differently: use native share only on mobile; desktop always uses our ShareSheet
   const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+  // Optimize text for X: include URL at top and keep within 280 chars
+  const xTweet = useMemo(() => {
+    const limit = 280;
+    const header = `🔗 Play: ${shareUrl}`;
+
+    const within = (body: string) => (header + '\n\n' + body).length <= limit;
+
+    if (within(shareText)) return `${header}\n\n${shareText}`;
+
+    // Work on the body only
+    const lines = shareText.split('\n');
+    const stripTags = (ls: string[]) => ls.filter((l) => !l.trim().startsWith('#'));
+
+    // 1) Remove hashtags lines entirely
+    let candidateLines = stripTags(lines);
+    let candidate = candidateLines.join('\n').trim();
+    if (within(candidate)) return `${header}\n\n${candidate}`;
+
+    // 2) Remove a CTA-like line (last non-grid, non-header line)
+    const isGridLine = (l: string) => /^\s*[EMH]:/.test(l);
+    const isHeader = (l: string) => l.includes('CanYouMCP') && l.includes('%');
+    for (let i = candidateLines.length - 1; i >= 0; i--) {
+      const l = candidateLines[i];
+      if (!isGridLine(l) && !isHeader(l) && l.trim().length > 0) {
+        candidateLines.splice(i, 1);
+        break;
+      }
+    }
+    candidate = candidateLines.join('\n').trim();
+    if (within(candidate)) return `${header}\n\n${candidate}`;
+
+    // 3) Remove trophy emoji
+    candidate = candidate.replace(/^🏆\s*/, '');
+    if (within(candidate)) return `${header}\n\n${candidate}`;
+
+    // 4) Remove difficulty labels to compress grid
+    candidate = candidate.replace(/(^|\n)[EMH]:\s?/g, '$1');
+    if (within(candidate)) return `${header}\n\n${candidate}`;
+
+    // 5) Collapse multiple newlines and trim
+    candidate = candidate.replace(/\n{2,}/g, '\n').trim();
+    if (within(candidate)) return `${header}\n\n${candidate}`;
+
+    // 6) Hard truncate body with ellipsis
+    const maxBodyLen = Math.max(0, limit - (header.length + 2) - 1);
+    const sliced = candidate.slice(0, maxBodyLen).trimEnd();
+    return `${header}\n\n${sliced}…`;
+  }, [shareText, shareUrl]);
+
   const waHref = useMemo(() => `https://wa.me/?text=${encodeURIComponent(fullText)}`, [fullText]);
   const xHref = useMemo(
-    () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
-    [shareText, shareUrl]
+    () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(xTweet)}`,
+    [xTweet]
   );
 
   const confettiIntensity = useMemo(() => {
@@ -66,7 +139,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
 
   const handleShare = async () => {
     if (isMobile) {
-      const data: ShareData = { title: 'CanYouMCP Quiz', text: shareText, url: shareUrl };
+      const data: ShareData = { title: 'CanYouMCP Quiz', text: mobileShareText };
       try {
         // @ts-ignore canShare may be missing in TS lib
         if (navigator.share && (!navigator.canShare || navigator.canShare(data))) {
@@ -109,27 +182,27 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="text-center bg-gray-800/50 p-8 rounded-2xl shadow-2xl backdrop-blur-sm border border-gray-700"
+      className="text-center bg-stone-800/50 p-8 rounded-2xl shadow-2xl backdrop-blur-sm border border-stone-700"
     >
       <ConfettiBurst intensity={confettiIntensity} emojis={confettiEmojis} />
-      <h2 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">Quiz Complete!</h2>
-      <p className="text-8xl font-bold my-4">{score}<span className="text-4xl text-gray-400">%</span></p>
-      <p className="text-lg text-gray-300 mb-6">{getPerformanceMessage()}</p>
+      <h2 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-500">Quiz Complete!</h2>
+      <p className="text-8xl font-bold my-4">{score}<span className="text-4xl text-stone-400">%</span></p>
+      <p className="text-lg text-stone-300 mb-6">{getPerformanceMessage()}</p>
 
       {showShareNudge && (
         <motion.div
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-          className="mb-2 flex items-center gap-2 rounded-2xl border border-gray-700/60 bg-gray-800/40 px-3 py-2 backdrop-blur"
+          className="mb-2 flex items-center gap-2 rounded-2xl border border-stone-700/60 bg-stone-800/40 px-3 py-2 backdrop-blur"
         >
-          <span className="hidden sm:inline text-sm text-gray-300">Challenge your friends</span>
+          <span className="hidden sm:inline text-sm text-stone-300">Challenge your friends</span>
           <div className="flex items-center gap-1.5">
             <a
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700/60 bg-gray-800/60 text-gray-200 hover:bg-gray-800"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-700/60 bg-stone-800/60 text-stone-200 hover:bg-stone-800"
               title="Share on WhatsApp"
             >
               <MessageCircle size={16} />
@@ -139,7 +212,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
               href={xHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700/60 bg-gray-800/60 text-gray-200 hover:bg-gray-800"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-700/60 bg-stone-800/60 text-stone-200 hover:bg-stone-800"
               title="Post on X"
             >
               <Twitter size={16} />
@@ -147,7 +220,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
             </a>
             <button
               onClick={copyLink}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700/60 bg-gray-800/60 text-gray-200 hover:bg-gray-800"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-700/60 bg-stone-800/60 text-stone-200 hover:bg-stone-800"
               title={copied ? 'Copied!' : 'Copy link'}
             >
               {copied ? <Copy size={16} /> : <LinkIcon size={16} />}
@@ -155,7 +228,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
             </button>
             <button
               onClick={() => setIsShareOpen(true)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-purple-700/40 bg-purple-600/30 text-purple-200 hover:bg-purple-600/40"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-700/40 bg-emerald-600/30 text-emerald-200 hover:bg-emerald-600/40"
               title="More ways to share"
             >
               <Share2 size={16} />
@@ -164,7 +237,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
           </div>
           <button
             onClick={() => setShowShareNudge(false)}
-            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-gray-800/70"
+            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-stone-400 hover:text-white hover:bg-stone-800/70"
             aria-label="Dismiss share suggestions"
           >
             <CloseIcon size={14} />
@@ -177,7 +250,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
       <div className="flex flex-col items-center gap-4 mt-8">
         <motion.button
           onClick={handleShare}
-          className="flex items-center justify-center gap-2 bg-purple-600 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-700 transition-colors w-full max-w-xs"
+          className="flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-700 transition-colors w-full max-w-xs shadow-lg hover:shadow-emerald-500/25"
           whileHover={{ scale: 1.05 }}
         >
           <Share2 size={18} />
@@ -185,7 +258,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
         </motion.button>
                 <motion.button
           onClick={onRestart}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors"
           whileHover={{ scale: 1.05 }}
         >
           <Repeat size={16} />

@@ -8,7 +8,7 @@ const QuizWelcome: React.FC<QuizWelcomeProps> = ({ onStart }) => {
   return (
     <div className="text-center">
       <motion.h1
-        className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600"
+        className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-500"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -16,7 +16,7 @@ const QuizWelcome: React.FC<QuizWelcomeProps> = ({ onStart }) => {
         CanYouMCP?
       </motion.h1>
       <motion.p
-        className="text-lg text-gray-300 mb-8"
+        className="text-lg text-stone-300 mb-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
@@ -25,7 +25,7 @@ const QuizWelcome: React.FC<QuizWelcomeProps> = ({ onStart }) => {
       </motion.p>
       <motion.button
         onClick={onStart}
-        className="bg-purple-600 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-700 transition-colors shadow-lg"
+        className="bg-emerald-600 text-white font-bold py-3 px-8 rounded-full hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-emerald-500/25"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >

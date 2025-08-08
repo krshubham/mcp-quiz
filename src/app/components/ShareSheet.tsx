@@ -37,7 +37,18 @@ const ShareSheet: React.FC<ShareSheetProps> = ({ isOpen, onClose, title, shareTe
     };
   }, [isOpen]);
 
-  const fullText = useMemo(() => `${shareText}\n${shareUrl}`, [shareText, shareUrl]);
+  const fullText = useMemo(() => `🔗 Play: ${shareUrl}\n\n${shareText}`, [shareText, shareUrl]);
+  const xTweet = useMemo(() => {
+    const header = `🔗 Play: ${shareUrl}`;
+    const limit = 280;
+    const sep = '\n\n';
+    const room = limit - (header.length + sep.length);
+    if (room <= 0) return header;
+    const body = shareText.length <= room ? shareText : `${shareText.slice(0, Math.max(0, room - 1)).trimEnd()}…`;
+    return `${header}${sep}${body}`;
+  }, [shareText, shareUrl]);
+  const xLength = xTweet.length;
+  const xOk = xLength <= 280;
 
   const platforms = useMemo(
     () => [
@@ -56,7 +67,7 @@ const ShareSheet: React.FC<ShareSheetProps> = ({ isOpen, onClose, title, shareTe
       {
         key: "x",
         label: "Post on X",
-        href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+        href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(xTweet)}`,
         icon: <Twitter size={18} />,
       },
       {
@@ -144,7 +155,7 @@ const ShareSheet: React.FC<ShareSheetProps> = ({ isOpen, onClose, title, shareTe
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: isMobileLike() ? "100%" : 20, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`relative z-10 w-full max-w-[560px] max-h-[85vh] overflow-y-auto bg-gray-900 border border-gray-800 shadow-2xl p-5 ${
+            className={`relative z-10 w-full max-w-[560px] max-h-[85vh] overflow-y-auto bg-stone-900 border border-stone-800 shadow-2xl p-5 ${
               isMobileLike()
                 ? "rounded-t-3xl"
                 : "rounded-2xl"
@@ -152,9 +163,22 @@ const ShareSheet: React.FC<ShareSheetProps> = ({ isOpen, onClose, title, shareTe
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Share your score</h3>
-              <button onClick={onClose} aria-label="Close share sheet" className="p-2 rounded hover:bg-gray-800">
-                <X size={18} className="text-gray-400" />
+              <button onClick={onClose} aria-label="Close share sheet" className="p-2 rounded hover:bg-stone-800">
+                <X size={18} className="text-stone-400" />
               </button>
+            </div>
+
+            {/* preview of share content */}
+            <div className="mb-4">
+              <div className="text-xs text-stone-400 mb-1">Preview</div>
+              <pre className="whitespace-pre-wrap break-words text-sm font-mono rounded-2xl border border-stone-800 bg-stone-900/60 p-3 text-stone-100">
+                <span className="text-emerald-300">🔗 Play: {shareUrl}</span>
+                {"\n\n"}
+                {shareText}
+              </pre>
+              <div className="mt-1 text-[11px] text-stone-400">
+                X length: {xLength}/280 {xOk ? '✅' : '⚠️ will truncate'}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -165,7 +189,7 @@ const ShareSheet: React.FC<ShareSheetProps> = ({ isOpen, onClose, title, shareTe
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => silentCopyDesktop(fullText)}
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl border border-gray-800 bg-gray-800/40 hover:bg-gray-800 transition-colors"
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl border border-stone-800 bg-stone-800/40 hover:bg-stone-800 transition-colors"
                 >
                   {p.icon}
                   <span className="text-sm text-white">{p.label}</span>
@@ -176,17 +200,17 @@ const ShareSheet: React.FC<ShareSheetProps> = ({ isOpen, onClose, title, shareTe
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={() => copy(shareUrl, "link")}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-800 bg-gray-800/40 hover:bg-gray-800 text-white"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-stone-800 bg-stone-800/40 hover:bg-stone-800 text-white"
               >
                 <LinkIcon size={18} />
                 {copied === "link" ? "Link Copied!" : "Copy Link"}
               </button>
               <button
                 onClick={() => copy(fullText, "text")}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-800 bg-gray-800/40 hover:bg-gray-800 text-white"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-stone-800 bg-stone-800/40 hover:bg-stone-800 text-white"
               >
                 <Copy size={18} />
-                {copied === "text" ? "Text Copied!" : "Copy Text"}
+                {copied === "text" ? "Results Copied!" : "Copy Results"}
               </button>
             </div>
           </motion.div>
