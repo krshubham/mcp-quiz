@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { Answer, Question } from '@/app/types';
-import { Check, X, Share2, Repeat } from 'lucide-react';
+import { Share2, Repeat, X as CloseIcon, MessageCircle, Twitter, Copy, Link as LinkIcon } from 'lucide-react';
 import ShareSheet from './ShareSheet';
 import ConfettiBurst from './ConfettiBurst';
 
@@ -14,6 +14,8 @@ interface QuizResultsProps {
 
 const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart }) => {
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [showShareNudge, setShowShareNudge] = useState(true);
+  const [copied, setCopied] = useState(false);
   const correctAnswers = answers.filter((a) => a.isCorrect).length;
   const totalQuestions = questions.length;
   const score = Math.round((correctAnswers / totalQuestions) * 100);
@@ -38,9 +40,16 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
     return `🤓 I only scored ${score}% on the CanYouMCP quiz. Flex your MCP skills!`;
   }, [score]);
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const fullText = useMemo(() => `${shareText}\n${shareUrl}`, [shareText, shareUrl]);
 
   // Treat mobile differently: use native share only on mobile; desktop always uses our ShareSheet
   const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  const waHref = useMemo(() => `https://wa.me/?text=${encodeURIComponent(fullText)}`, [fullText]);
+  const xHref = useMemo(
+    () => `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+    [shareText, shareUrl]
+  );
 
   const confettiIntensity = useMemo(() => {
     if (score === 100) return 'ultra' as const;
@@ -72,6 +81,30 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
     setIsShareOpen(true);
   };
 
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (_) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      } catch {
+        // no-op
+      }
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -82,6 +115,62 @@ const QuizResults: React.FC<QuizResultsProps> = ({ answers, questions, onRestart
       <h2 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">Quiz Complete!</h2>
       <p className="text-8xl font-bold my-4">{score}<span className="text-4xl text-gray-400">%</span></p>
       <p className="text-lg text-gray-300 mb-6">{getPerformanceMessage()}</p>
+
+      {showShareNudge && (
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+          className="mb-2 flex items-center gap-2 rounded-2xl border border-gray-700/60 bg-gray-800/40 px-3 py-2 backdrop-blur"
+        >
+          <span className="hidden sm:inline text-sm text-gray-300">Challenge your friends</span>
+          <div className="flex items-center gap-1.5">
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700/60 bg-gray-800/60 text-gray-200 hover:bg-gray-800"
+              title="Share on WhatsApp"
+            >
+              <MessageCircle size={16} />
+              <span className="sr-only">WhatsApp</span>
+            </a>
+            <a
+              href={xHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700/60 bg-gray-800/60 text-gray-200 hover:bg-gray-800"
+              title="Post on X"
+            >
+              <Twitter size={16} />
+              <span className="sr-only">X</span>
+            </a>
+            <button
+              onClick={copyLink}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-700/60 bg-gray-800/60 text-gray-200 hover:bg-gray-800"
+              title={copied ? 'Copied!' : 'Copy link'}
+            >
+              {copied ? <Copy size={16} /> : <LinkIcon size={16} />}
+              <span className="sr-only">Copy Link</span>
+            </button>
+            <button
+              onClick={() => setIsShareOpen(true)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-purple-700/40 bg-purple-600/30 text-purple-200 hover:bg-purple-600/40"
+              title="More ways to share"
+            >
+              <Share2 size={16} />
+              <span className="sr-only">More</span>
+            </button>
+          </div>
+          <button
+            onClick={() => setShowShareNudge(false)}
+            className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-gray-800/70"
+            aria-label="Dismiss share suggestions"
+          >
+            <CloseIcon size={14} />
+          </button>
+        </motion.div>
+      )}
 
 
 

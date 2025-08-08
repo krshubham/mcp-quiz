@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Link as LinkIcon, Copy, Mail, MessageCircle, Send, Globe, X } from "lucide-react";
+import { Link as LinkIcon, Copy, Mail, X, MessageCircle, Send, Twitter, Facebook, Linkedin } from "lucide-react";
 
 interface ShareSheetProps {
   isOpen: boolean;
@@ -57,19 +57,19 @@ const ShareSheet: React.FC<ShareSheetProps> = ({ isOpen, onClose, title, shareTe
         key: "x",
         label: "Post on X",
         href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
-        icon: <Share2 size={18} />,
+        icon: <Twitter size={18} />,
       },
       {
         key: "facebook",
         label: "Facebook",
         href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
-        icon: <Globe size={18} />,
+        icon: <Facebook size={18} />,
       },
       {
         key: "linkedin",
         label: "LinkedIn",
         href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
-        icon: <Globe size={18} />,
+        icon: <Linkedin size={18} />,
       },
       {
         key: "email",
